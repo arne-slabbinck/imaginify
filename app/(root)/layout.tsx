@@ -1,4 +1,7 @@
-import React from 'react'
+import MobileNav from '@/components/shared/MobileNav'
+import Sidebar from '@/components/shared/Sidebar'
+
+// This is where are the within the applicaton wll be
 
 // Layout will typically export children and allow you to share UI for like navigation bar or footer
 // You don't want to have your auth route to have the footer and the nav bar
@@ -10,8 +13,8 @@ import React from 'react'
 const Layout = ({ children }: { children: React.ReactNode}) => {
   return (
     <main className="root">
-      {/* <Sidebar /> */}
-      {/* <MobileNav /> */}
+      <Sidebar />
+      <MobileNav />
 
         <div className="root-container">
             <div className="wrapper">
