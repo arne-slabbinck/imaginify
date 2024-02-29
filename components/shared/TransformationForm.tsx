@@ -31,6 +31,13 @@ import { aspectRatioOptions, defaultValues, transformationTypes } from "@/consta
 import { CustomField } from "./CustomField"
 import { useState, useTransition } from "react"
 import { AspectRatioKey, debounce, deepMergeObjects } from "@/lib/utils"
+import MediaUploader from "./MediaUploader"
+import TransformedImage from "./TransformedImage"
+import { transform } from "next/dist/build/swc"
+import image from "next/image"
+import { updateCredits } from "@/lib/actions/user.actions"
+import { getCldImageUrl } from "next-cloudinary"
+import { addImage } from "@/lib/actions/image.actions"
 
 
 // validation, fields
@@ -49,7 +56,7 @@ const TransformationForm = ({ action, data = null, userId, type,
     const transformationType = transformationTypes[type];
 
     // we need states for image upload
-    const [Image, setImage] = useState(data)
+    const [image, setImage] = useState(data)
 
     // we also want to track the current transformation, what are we doing with the image
     // we specify it's of type transformation, or (single | in typescript), null
@@ -86,10 +93,53 @@ const TransformationForm = ({ action, data = null, userId, type,
     })
 
     // 2. Define a submit handler.
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: z.infer<typeof formSchema>) {
         // Do something with the form values.
         // This will be type-safe and validated.
         console.log(values)
+
+        setisSubmitting(true);
+
+        // if we have data or image, we can proceed to the upload
+        if(data || image) {
+
+            // let's get the transformationUrl provided for us by cloudinary
+            const transformationUrl = getCldImageUrl({
+                width: image?.width,
+                height: image?.height,
+                src: image?.publicId,
+                ...transformationConfig
+            })
+
+            // form imagedata by creating new object, getting info from form(values) & uploaded image
+            const imageData = {
+                title: values.title,
+                publicId: image?.publicId,
+                transformationType: type,    // is it a recoller, generative fill, ...
+                width: image?.width,
+                height: image?.height,
+                config: transformationConfig,
+                secureURL: image?.secureUrl,
+                transformationURL: transformationUrl,
+                aspectRatio: values.aspectRatio,
+                prompt: values.prompt,
+                color: values.color,
+            }
+
+            if(action === 'Add') {
+                // Add image
+                try {
+                    const newImage = await addImage({
+                        image: imageData,
+                        userId,
+                        path: '/'
+                    })
+                } catch (error) {
+                    console.log(error);
+                }
+            }
+        }
+
     }
 
     const onSelectFieldHandler = (value: string, onChangeField: (value: string) => void) => {
@@ -133,6 +183,7 @@ const TransformationForm = ({ action, data = null, userId, type,
         }, 1000);
     }
 
+    // TODO: Update creditFee to something else
     const onTransformHandler = async () => {
         setisTransforming(true)
 
@@ -146,7 +197,7 @@ const TransformationForm = ({ action, data = null, userId, type,
         setnewTransformation(null)
 
         startTransition(async () => {
-            // await updateCredits(userId, creditFee)
+            await updateCredits(userId, -1)
         })
     }
 
@@ -157,7 +208,7 @@ const TransformationForm = ({ action, data = null, userId, type,
                     control={form.control}
                     name="title"
                     formLabel="Image Title"
-                    className="w-full"
+                    className="w-full text-gray-700"
                     // destructure the field from the values we're getting
                     // automatically return input property, to which we can spread all the field props
                     render={({ field }) => <Input {...field} className="input-field" />}
@@ -170,17 +221,24 @@ const TransformationForm = ({ action, data = null, userId, type,
                         control={form.control} 
                         name="aspectRatio"
                         formLabel="Aspect Ratio"
-                        className="w-full"
+                        className="w-full text-gray-700"
                         render={({ field }) => (
                             <Select
                                 onValueChange={(value) => onSelectFieldHandler(value, field.onChange)}
+                                // styles={{
+                                //     control: (baseStyles, state) => ({
+                                //         ...baseStyles,
+                                //         borderColor: state.isFocused ? 'grey' : 'red',
+                                //     }),
+                                // }}
+                                
                             >
                                 <SelectTrigger className="select-field">
-                                    <SelectValue placeholder="Select size" />
+                                    <SelectValue placeholder={<div className="select-placeholder-text">Select sizes</div>}  />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {Object.keys(aspectRatioOptions).map((key) => (
-                                        <SelectItem key={key} value={key} className="select-item">
+                                        <SelectItem key={key} value={key} className="select-item text-gray-700">
                                             {aspectRatioOptions[key as AspectRatioKey].label}
                                         </SelectItem>
                                     ))}
@@ -237,10 +295,36 @@ const TransformationForm = ({ action, data = null, userId, type,
                     </div>
                 )}
 
+                <div className="media-uploader-field">
+                    <CustomField 
+                        control={form.control}
+                        name="publicId"
+                        className="flex size-full flex-col"
+                        render={({ field }) => (
+                            <MediaUploader 
+                                onValueChange={field.onChange}
+                                setImage={setImage}
+                                publicId={field.value}
+                                image={image}
+                                type={type}
+                            />
+                        )}
+                    />
+
+                    <TransformedImage 
+                        image={image}
+                        type={type}
+                        title={form.getValues().title}
+                        isTransforming={isTransforming}
+                        setIsTransforming={setisTransforming}
+                        transformationConfig={transformationConfig}
+                    />
+                </div>
+
                 <div className="flex flex-col gap-4">
                 <Button 
                     type="button"
-                    className="submit-button capitalize"
+                    className="submit-button-red capitalize"
                     // make it disabled if we're currently submitting
                     disabled={isTransforming || newTransformation === null}
                     onClick={onTransformHandler}
@@ -249,7 +333,7 @@ const TransformationForm = ({ action, data = null, userId, type,
                 </Button>
                 <Button 
                     type="submit"
-                    className="submit-button capitalize"
+                    className="submit-button-red capitalize"
                     // make it disabled if we're currently submitting
                     disabled={isSubmitting}
                 >
