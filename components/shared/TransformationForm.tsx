@@ -133,8 +133,6 @@ const TransformationForm = ({ action, data = null, userId, type,
         }, 1000);
     }
 
-    // TODO: Return to updateCredits
-
     const onTransformHandler = async () => {
         setisTransforming(true)
 
