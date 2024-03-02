@@ -27,9 +27,9 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { aspectRatioOptions, defaultValues, transformationTypes } from "@/constants"
+import { aspectRatioOptions, creditFee, defaultValues, transformationTypes } from "@/constants"
 import { CustomField } from "./CustomField"
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { AspectRatioKey, debounce, deepMergeObjects } from "@/lib/utils"
 import MediaUploader from "./MediaUploader"
 import TransformedImage from "./TransformedImage"
@@ -37,7 +37,9 @@ import { transform } from "next/dist/build/swc"
 import image from "next/image"
 import { updateCredits } from "@/lib/actions/user.actions"
 import { getCldImageUrl } from "next-cloudinary"
-import { addImage } from "@/lib/actions/image.actions"
+import { addImage, updateImage } from "@/lib/actions/image.actions"
+import { useRouter } from "next/navigation"
+import { InsufficientCreditsModal } from "./InsufficientCreditsModal"
 
 
 // validation, fields
@@ -70,6 +72,8 @@ const TransformationForm = ({ action, data = null, userId, type,
     
     // useTransitionhook let's you update the state without blocking the UI
     const [isPending, startTransition] = useTransition()
+
+    const router = useRouter()
 
     // In case we edit specific image, we might have some data from before
     // If data exist and if action is equal to update, then we can define object
@@ -119,7 +123,7 @@ const TransformationForm = ({ action, data = null, userId, type,
                 width: image?.width,
                 height: image?.height,
                 config: transformationConfig,
-                secureURL: image?.secureUrl,
+                secureURL: image?.secureURL,
                 transformationURL: transformationUrl,
                 aspectRatio: values.aspectRatio,
                 prompt: values.prompt,
@@ -134,11 +138,38 @@ const TransformationForm = ({ action, data = null, userId, type,
                         userId,
                         path: '/'
                     })
+
+                    if(newImage) {
+                        form.reset()
+                        setImage(data)
+                        router.push(`/transformations/${newImage._id}`)
+                    }
+                } catch (error) {
+                    console.log(error);
+                }
+            }
+
+            if(action == 'Update') {
+                try {
+                    const updatedImage = await updateImage({
+                        image: {
+                            ...imageData,
+                            _id: data._id
+                        },
+                        userId,
+                        path: `/transformations/${data._id}`
+                    })
+
+                    if(updatedImage) {
+                        router.push(`/transformations/${updatedImage._id}`)
+                    }
                 } catch (error) {
                     console.log(error);
                 }
             }
         }
+
+        setisSubmitting(false)
 
     }
 
@@ -195,15 +226,25 @@ const TransformationForm = ({ action, data = null, userId, type,
         )
 
         setnewTransformation(null)
-
-        startTransition(async () => {
-            await updateCredits(userId, -1)
-        })
+        
+        // #ENABLE TO DEDUCT CREDITS
+        // startTransition(async () => {
+        //     await updateCredits(userId, creditFee)
+        // })
     }
+
+    useEffect(() => {
+        if(image && (type === 'restore' || type === 'removeBackground'))
+        setnewTransformation(transformationType.config)
+    }, [image, transformationType.config, type] )
 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+
+                {/* Check for credit balance */}
+                {/* If lower than absolute value (-5 = 5), render insufficientmodal as self closing component */}
+                {creditBalance < Math.abs(creditFee) && <InsufficientCreditsModal />}
                 <CustomField 
                     control={form.control}
                     name="title"
@@ -234,7 +275,7 @@ const TransformationForm = ({ action, data = null, userId, type,
                                 
                             >
                                 <SelectTrigger className="select-field">
-                                    <SelectValue placeholder={<div className="select-placeholder-text">Select sizes</div>}  />
+                                    <SelectValue placeholder={<div className="select-placeholder-text">Select size</div>}  />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {Object.keys(aspectRatioOptions).map((key) => (

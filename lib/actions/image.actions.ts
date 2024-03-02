@@ -10,6 +10,8 @@ import User from "../database/models/user.model";
 import Image from "../database/models/image.model";
 import { redirect } from "next/navigation";
 
+import { v2 as cloudinary } from 'cloudinary'
+
 const populateUser = (query: any) => query.populate({
     path: 'author',
     model: User,
@@ -99,4 +101,76 @@ export async function getImageById(imageId: string) {
         handleError(error)
     }
 }
+
+// GET ALL IMAGES
+export async function getAllImages({ limit = 9, page = 1, searchQuery = ''}: {
+        limit?: number;
+        page: number;
+        searchQuery?: string;
+    }) {
+        try {
+            await connectToDatabase();
+
+            cloudinary.config({
+                cloud_name:process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+                api_key: process.env.CLOUDINARY_API_KEY,
+                api_secret: process.env.CLOUDINARY_API_SECRET,
+                secure: true,
+            })
+
+            console.log('do we get this far')
+            
+            let expression = 'folder=imaginify';  // name of folder in ur cloudinary product environment settings
+
+            if (searchQuery) {
+                expression += ` AND ${searchQuery}`
+            }
+
+            // get resources we need (also for if we have query string)
+            const { resources }  = await cloudinary.search
+                .expression(expression)
+                .execute();
+            
+            // get back the resource id's so we can get them from our database
+            const resourceIds = resources.map((resource: any) => resource.public_id);
+
+            // form a new query for querying our own DB with the resources ID's
+            let query = {};
+
+            if(searchQuery) {
+                // go over the publicId's, and include resource Id's we got back from cloudinary
+                query = {
+                    publicId: {
+                        $in: resourceIds
+                    }
+                }
+            }
+
+            //implement pagination
+            const skipAmount = (Number(page) -1) * limit;
+
+            //fetch back images, also with the userdata so we know who created it
+            const images = await populateUser(Image.find(query))
+                .sort({ updateAt: -1}) //newer ones appear at top
+                .skip(skipAmount)      //for pagination
+                .limit(limit);
+
+            // define number of total images with passed query
+            const totalImages = await Image.find(query).countDocuments();
+
+            // total number of all images in general
+            const savedImages = await Image.find().countDocuments();
+
+            return {
+                data: JSON.parse(JSON.stringify(images)),
+                totalPage: Math.ceil(totalImages / limit),  //returns smallest number that's greater than or equal to
+                savedImages,
+            }
+
+
+        } catch (error) {
+            handleError(error)
+        }
+}
+
 

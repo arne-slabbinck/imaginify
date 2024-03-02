@@ -36,7 +36,7 @@ const Sidebar = () => {
                                         
                                         // Only when it is active
                                         ${ isActive ? 'bg-red-gradient text-white'
-                                                    : 'text-red-400'}
+                                                    : 'text-gray-700'}
                                         `}>
                                             <Link className="sidebar-link" href={link.route}>
                                                 <Image 
@@ -65,7 +65,7 @@ const Sidebar = () => {
                                         
                                         // Only when it is active
                                         ${ isActive ? 'bg-red-gradient text-white'
-                                                    : 'text-red-400'}
+                                                    : 'text-gray-700'}
                                         `}>
                                             <Link className="sidebar-link" href={link.route}>
                                                 <Image 
@@ -81,7 +81,7 @@ const Sidebar = () => {
                                 )
                             })}
 
-                            <li className="flex-center cursor-pointer gap-2 p-4 text-red-400">
+                            <li className="flex-center cursor-pointer gap-2 p-4 text-gray-700">
                                 <UserButton afterSignOutUrl='/' showName />
                             </li>
                         </ul>

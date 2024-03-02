@@ -16,7 +16,7 @@ const MobileNav = () => {
         <header className="header">
             <Link href="/" className="flex items-center gap-2 md:py-2">
                 <Image
-                    src="/assets/images/logo-text.svg"
+                    src="/assets/images/noedel_logo2.png"
                     alt="logo"
                     width={180}
                     height={28}
@@ -30,7 +30,7 @@ const MobileNav = () => {
                     <Sheet>
                         <SheetTrigger>
                             <Image
-                                src="/assets/icons/menu.svg"
+                                src="/assets/icons/menu-red.svg"
                                 alt="menu"
                                 width={32}
                                 height={32}
@@ -41,7 +41,7 @@ const MobileNav = () => {
                             {/* render empty react fragment */}
                             <>
                                 <Image
-                                    src="/assets/images/logo-text.svg"
+                                    src="/assets/images/noedel_logo2.png"
                                     alt="logo"
                                     width={152}
                                     height={23}
@@ -54,7 +54,7 @@ const MobileNav = () => {
 
                                         return (
                                             <li 
-                                                className={`${isActive && 'gradient-text'} p-18 flex whitespace-nowrap text-dark-700`}
+                                                className={`${isActive && 'gradient-text-red'} p-18 flex whitespace-nowrap text-gray-700`}
                                                 key={link.route}
                                                 >
                                                 <Link className="sidebar-link cursor-pointer" href={link.route}>
