@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react'
 import Image from 'next/image'
 import { CldImage } from 'next-cloudinary'
@@ -15,7 +17,8 @@ const TransformedImage = ({ image, type, title, transformationConfig, isTransfor
             <h3 className="h3-bold text-black">Transformed</h3>
 
             {hasDownload && (
-                <button className="download-btn" onClick={downloadHandler}>
+                <button className="download-btn" onClick={downloadHandler}> 
+                {/* because we give the button an onclick listener prop, we need to specify "on client" on top  */}
                     <Image 
                         src="/assets/icons/download.svg"
                         alt="Download"
