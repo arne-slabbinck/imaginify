@@ -20,7 +20,7 @@ const TransformedImage = ({ image, type, title, transformationConfig, isTransfor
                 <button className="download-btn" onClick={downloadHandler}> 
                 {/* because we give the button an onclick listener prop, we need to specify "on client" on top  */}
                     <Image 
-                        src="/assets/icons/download.svg"
+                        src="/assets/icons/download-light-red.svg"
                         alt="Download"
                         width={24}
                         height={24}
